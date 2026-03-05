@@ -8,6 +8,9 @@ import '../../widgets/custom_icon_widget.dart';
 import './widgets/email_input_widget.dart';
 import './widgets/order_confirmation_widget.dart';
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 class EmailCollectionScreen extends StatefulWidget {
   const EmailCollectionScreen({super.key});
 
@@ -23,6 +26,7 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
   bool _isSubmitting = false;
   bool _checkoutComplete = false;
   String? _photoPath;
+  String? _photoBase64;
   String _resolvedEmail = '';
 
   @override
@@ -31,7 +35,7 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     _photoPath = args?['photoPath'] as String?;
-  }
+    _photoBase64 = args?['photoBase64'] as String?;  }
 
   /// Accepts "username" or "username@carleton.edu"
   bool _validateInput(String value) {
@@ -78,7 +82,20 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
         input.contains('@') ? input : '$input@carleton.edu';
 
     // Simulate a brief processing moment
-    await Future.delayed(const Duration(milliseconds: 600));
+// Send photo and email to Google Drive
+    try {
+      await http.post(
+        Uri.parse('https://script.google.com/macros/s/AKfycbwHrbADiyatjB2jTnpWnOZ0jm9ei5NZUgiXmoYgZp4KRc6D6NDNLPq9pdmt5TXOal5d-A/exec'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _resolvedEmail,
+          'timestamp': DateTime.now().toIso8601String(),
+          'image': _photoBase64 ?? '',
+        }),
+      );
+    } catch (_) {
+      // Continue even if upload fails
+    }
 
     if (mounted) {
       setState(() {
