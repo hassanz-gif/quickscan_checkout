@@ -82,21 +82,24 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
         input.contains('@') ? input : '$input@carleton.edu';
 
     // Simulate a brief processing moment
-// Send photo and email to Google Drive
+    // Send photo and email to Google Drive
     try {
+      final uri = Uri.parse('https://script.google.com/macros/s/AKfycbwHrbADiyatjB2jTnpWnOZ0jm9ei5NZUgiXmoYgZp4KRc6D6NDNLPq9pdmt5TXOal5d-A/exec');
+      final body = jsonEncode({
+        'email': _resolvedEmail,
+        'timestamp': DateTime.now().toIso8601String(),
+        'image': _photoBase64 ?? '',
+      });
       await http.post(
-        Uri.parse('https://script.google.com/macros/s/AKfycbwHrbADiyatjB2jTnpWnOZ0jm9ei5NZUgiXmoYgZp4KRc6D6NDNLPq9pdmt5TXOal5d-A/exec'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': _resolvedEmail,
-          'timestamp': DateTime.now().toIso8601String(),
-          'image': _photoBase64 ?? '',
-        }),
+        uri,
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        body: body,
       );
     } catch (_) {
       // Continue even if upload fails
     }
-
     if (mounted) {
       setState(() {
         _isSubmitting = false;
