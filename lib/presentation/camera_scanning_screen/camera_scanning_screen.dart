@@ -126,10 +126,17 @@ class _CameraScanningScreenState extends State<CameraScanningScreen> {
         html.Url.revokeObjectUrl(url);
       }
 
+// Read photo bytes to pass to email screen
+      final bytes = await photo.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
       if (mounted) {
         await Navigator.of(context, rootNavigator: true).pushNamed(
           '/email-collection-screen',
-          arguments: {'photoPath': savedPath ?? photo.path},
+          arguments: {
+            'photoPath': savedPath ?? photo.path,
+            'photoBase64': base64Image,
+          },
         );
       }
     } catch (_) {
