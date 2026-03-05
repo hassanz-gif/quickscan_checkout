@@ -40,7 +40,7 @@ class EmailInputWidget extends StatelessWidget {
           textCapitalization: TextCapitalization.none,
           onChanged: onChanged,
           decoration: InputDecoration(
-            hintText: 'Enter email for receipt',
+            hintText: 'Username or full @carleton.edu email',
             prefixIcon: Padding(
               padding: const EdgeInsets.all(12),
               child: CustomIconWidget(
