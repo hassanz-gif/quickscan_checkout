@@ -210,36 +210,11 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
               ),
 
               SizedBox(height: 3.h),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.5.h),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: theme.colorScheme.error.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '* ',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'All items must be returned in 3 days unless an exemption was given by a makerspace staff member.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onErrorContainer,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+              Text(
+                '* All items must be returned in 3 days unless an exemption was given by a makerspace staff member.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.black,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
 
