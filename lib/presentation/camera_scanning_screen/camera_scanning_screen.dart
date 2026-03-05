@@ -115,6 +115,17 @@ class _CameraScanningScreenState extends State<CameraScanningScreen> {
         }
       }
 
+// Auto-download photo on web
+      if (kIsWeb) {
+        final bytes = await photo.readAsBytes();
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute('download', 'checkout_${DateTime.now().millisecondsSinceEpoch}.jpg')
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      }
+
       if (mounted) {
         await Navigator.of(context, rootNavigator: true).pushNamed(
           '/email-collection-screen',
