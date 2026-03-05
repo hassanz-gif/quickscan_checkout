@@ -1,11 +1,12 @@
+import 'dart:io' if (dart.library.io) 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
-import '../../widgets/custom_app_bar.dart';
-import './widgets/checkout_summary_widget.dart';
+import '../../widgets/custom_icon_widget.dart';
 import './widgets/email_input_widget.dart';
 import './widgets/order_confirmation_widget.dart';
-import './widgets/payment_options_widget.dart';
 
 class EmailCollectionScreen extends StatefulWidget {
   const EmailCollectionScreen({super.key});
@@ -19,90 +20,77 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
   bool _isEmailValid = false;
   bool _hasEmailError = false;
   String? _emailErrorMessage;
-  bool _isProcessing = false;
-  bool _showPayment = false;
-  bool _orderConfirmed = false;
+  bool _isSubmitting = false;
+  bool _checkoutComplete = false;
+  String? _photoPath;
+  String _resolvedEmail = '';
 
-  final List<Map<String, dynamic>> _scannedItems = [
-    {
-      "id": 1,
-      "name": "Organic Green Tea",
-      "price": 8.99,
-      "quantity": 2,
-      "image":
-          "https://img.rocket.new/generatedImages/rocket_gen_img_1298e33ac-1772696549384.png",
-      "semanticLabel":
-          "Box of organic green tea with green packaging on white background",
-    },
-    {
-      "id": 2,
-      "name": "Whole Grain Bread",
-      "price": 4.49,
-      "quantity": 1,
-      "image":
-          "https://images.unsplash.com/photo-1618194696460-202623a57e02",
-      "semanticLabel": "Sliced whole grain bread loaf on wooden cutting board",
-    },
-    {
-      "id": 3,
-      "name": "Fresh Orange Juice",
-      "price": 5.99,
-      "quantity": 1,
-      "image":
-          "https://images.unsplash.com/photo-1716834092549-7d8fd540b51a",
-      "semanticLabel": "Glass of fresh orange juice with oranges in background",
-    },
-  ];
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    _photoPath = args?['photoPath'] as String?;
+  }
 
-  double get _totalAmount => (_scannedItems).fold(
-    0.0,
-    (sum, item) => sum + (item['price'] as double) * (item['quantity'] as int),
-  );
-
-  bool _validateEmail(String email) {
-    final emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-    );
-    return emailRegex.hasMatch(email);
+  /// Accepts "username" or "username@carleton.edu"
+  bool _validateInput(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return false;
+    // Full email — must end in @carleton.edu
+    if (trimmed.contains('@')) {
+      return RegExp(r'^[a-zA-Z0-9._%+-]+@carleton\.edu$').hasMatch(trimmed);
+    }
+    // Username only — must be valid characters
+    return RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(trimmed);
   }
 
   void _onEmailChanged(String value) {
     setState(() {
-      if (value.isEmpty) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) {
         _isEmailValid = false;
         _hasEmailError = false;
         _emailErrorMessage = null;
-      } else if (_validateEmail(value)) {
+      } else if (_validateInput(trimmed)) {
         _isEmailValid = true;
         _hasEmailError = false;
         _emailErrorMessage = null;
+      } else if (trimmed.contains('@') &&
+          !trimmed.endsWith('@carleton.edu')) {
+        _isEmailValid = false;
+        _hasEmailError = true;
+        _emailErrorMessage = 'Must be a @carleton.edu address';
       } else {
         _isEmailValid = false;
         _hasEmailError = true;
-        _emailErrorMessage = 'Please enter a valid email address';
+        _emailErrorMessage = 'Enter your username or full @carleton.edu email';
       }
     });
   }
 
-  Future<void> _continueToPayment() async {
+  Future<void> _submitCheckout() async {
     if (!_isEmailValid) return;
-    setState(() => _isProcessing = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    setState(() {
-      _isProcessing = false;
-      _showPayment = true;
-    });
+    setState(() => _isSubmitting = true);
+
+    final input = _emailController.text.trim();
+    _resolvedEmail =
+        input.contains('@') ? input : '$input@carleton.edu';
+
+    // Simulate a brief processing moment
+    await Future.delayed(const Duration(milliseconds: 600));
+
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+        _checkoutComplete = true;
+      });
+    }
   }
 
-  void _onPaymentSuccess() {
-    setState(() => _orderConfirmed = true);
-  }
-
-  void _startNewScan() {
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).pushNamed('/camera-scanning-screen');
+  void _returnToCamera() {
+    Navigator.of(context, rootNavigator: true)
+        .pushReplacementNamed('/camera-scanning-screen');
   }
 
   @override
@@ -114,78 +102,147 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (_checkoutComplete) {
+      return Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        body: SafeArea(
+          child: OrderConfirmationWidget(
+            email: _resolvedEmail,
+            onStartNewScan: _returnToCamera,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      appBar: _orderConfirmed
-          ? null
-          : CustomAppBar(
-              title: _showPayment ? 'Payment' : 'Checkout',
-              showBackButton: true,
-              variant: CustomAppBarVariant.solid,
-            ),
+      backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: CustomIconWidget(
+            iconName: 'arrow_back',
+            color: theme.colorScheme.onSurface,
+            size: 24,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Checkout',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
-        child: _orderConfirmed
-            ? Padding(
-                padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
-                child: OrderConfirmationWidget(
-                  email: _emailController.text,
-                  totalAmount: _totalAmount,
-                  onStartNewScan: _startNewScan,
-                ),
-              )
-            : SingleChildScrollView(
-                padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CheckoutSummaryWidget(
-                      scannedItems: _scannedItems,
-                      totalAmount: _totalAmount,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Photo preview
+              if (_photoPath != null && !kIsWeb) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 28.h,
+                    child: Image.file(
+                      File(_photoPath!),
+                      fit: BoxFit.cover,
                     ),
-                    SizedBox(height: 3.h),
-                    if (!_showPayment) ...[
-                      EmailInputWidget(
-                        controller: _emailController,
-                        isValid: _isEmailValid,
-                        hasError: _hasEmailError,
-                        errorMessage: _emailErrorMessage,
-                        onChanged: _onEmailChanged,
-                      ),
-                      SizedBox(height: 1.h),
-                      Text(
-                        'Your receipt will be sent to this email address.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isEmailValid && !_isProcessing
-                              ? _continueToPayment
-                              : null,
-                          child: _isProcessing
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: theme.colorScheme.onPrimary,
-                                  ),
-                                )
-                              : const Text('Continue to Payment'),
-                        ),
-                      ),
-                    ] else ...[
-                      PaymentOptionsWidget(
-                        totalAmount: _totalAmount,
-                        onPaymentSuccess: _onPaymentSuccess,
-                      ),
-                    ],
-                    SizedBox(height: 4.h),
-                  ],
+                  ),
+                ),
+                SizedBox(height: 2.5.h),
+              ] else ...[
+                Container(
+                  width: double.infinity,
+                  height: 18.h,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: CustomIconWidget(
+                      iconName: 'photo_camera',
+                      color: theme.colorScheme.onSurfaceVariant,
+                      size: 48,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 2.5.h),
+              ],
+
+              Text(
+                'Who\'s checking out?',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
+              SizedBox(height: 0.5.h),
+              Text(
+                'Enter your Carleton username or full email address.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: 3.h),
+
+              EmailInputWidget(
+                controller: _emailController,
+                isValid: _isEmailValid,
+                hasError: _hasEmailError,
+                errorMessage: _emailErrorMessage,
+                onChanged: _onEmailChanged,
+              ),
+
+              SizedBox(height: 0.8.h),
+              Padding(
+                padding: EdgeInsets.only(left: 1.w),
+                child: Text(
+                  'e.g.  "hassanz"  or  "hassanz@carleton.edu"',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 4.h),
+
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed:
+                      _isEmailValid && !_isSubmitting ? _submitCheckout : null,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        )
+                      : const Text(
+                          'Complete Checkout',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
