@@ -99,16 +99,17 @@ class _OrderConfirmationWidgetState extends State<OrderConfirmationWidget>
             Container(
               padding:
                   EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.8.h),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
+            decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green, width: 1.5),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CustomIconWidget(
                     iconName: 'person',
-                    color: theme.colorScheme.primary,
+                    color: Colors.green,
                     size: 18,
                   ),
                   SizedBox(width: 2.w),
@@ -116,7 +117,7 @@ class _OrderConfirmationWidgetState extends State<OrderConfirmationWidget>
                     widget.email,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
+                      color: Colors.black87,
                     ),
                   ),
                 ],
