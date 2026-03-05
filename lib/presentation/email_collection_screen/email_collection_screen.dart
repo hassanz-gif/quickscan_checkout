@@ -9,8 +9,7 @@ import './widgets/email_input_widget.dart';
 import './widgets/order_confirmation_widget.dart';
 
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-
+import 'package:universal_html/html.dart' as html;
 class EmailCollectionScreen extends StatefulWidget {
   const EmailCollectionScreen({super.key});
 
@@ -82,24 +81,27 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
         input.contains('@') ? input : '$input@carleton.edu';
 
     // Simulate a brief processing moment
-    // Send photo and email to Google Drive
+    // Send via form submission to bypass CORS
     try {
-      final uri = Uri.parse('https://script.google.com/macros/s/AKfycbwHrbADiyatjB2jTnpWnOZ0jm9ei5NZUgiXmoYgZp4KRc6D6NDNLPq9pdmt5TXOal5d-A/exec');
-      final body = jsonEncode({
-        'email': _resolvedEmail,
-        'timestamp': DateTime.now().toIso8601String(),
-        'image': _photoBase64 ?? '',
-      });
-      await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'text/plain',
-        },
-        body: body,
-      );
-    } catch (_) {
-      // Continue even if upload fails
-    }
+      final form = html.FormElement()
+        ..method = 'post'
+        ..action = 'https://script.google.com/macros/s/AKfycbwHrbADiyatjB2jTnpWnOZ0jm9ei5NZUgiXmoYgZp4KRc6D6NDNLPq9pdmt5TXOal5d-A/exec'
+        ..target = 'hidden_iframe';
+
+      final dataField = html.InputElement()
+        ..type = 'hidden'
+        ..name = 'data'
+        ..value = jsonEncode({
+          'email': _resolvedEmail,
+          'timestamp': DateTime.now().toIso8601String(),
+          'image': _photoBase64 ?? '',
+        });
+
+      form.append(dataField);
+      html.document.body!.append(form);
+      form.submit();
+      form.remove();
+    } catch (_) {}
     if (mounted) {
       setState(() {
         _isSubmitting = false;
