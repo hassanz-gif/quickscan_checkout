@@ -9,6 +9,7 @@ import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
 import '../../widgets/custom_icon_widget.dart';
+import 'dart:convert';
 
 class CameraScanningScreen extends StatefulWidget {
   const CameraScanningScreen({super.key});
