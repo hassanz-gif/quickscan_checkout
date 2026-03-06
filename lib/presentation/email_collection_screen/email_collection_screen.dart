@@ -9,8 +9,7 @@ import './widgets/email_input_widget.dart';
 import './widgets/order_confirmation_widget.dart';
 
 import 'dart:convert';
-import 'package:universal_html/html.dart' as html;
-class EmailCollectionScreen extends StatefulWidget {
+import 'package:http/http.dart' as http;class EmailCollectionScreen extends StatefulWidget {
   const EmailCollectionScreen({super.key});
 
   @override
@@ -81,26 +80,17 @@ class _EmailCollectionScreenState extends State<EmailCollectionScreen> {
         input.contains('@') ? input : '$input@carleton.edu';
 
     // Simulate a brief processing moment
-    // Send via form submission to bypass CORS
+    // Send via proxy server
     try {
-      final form = html.FormElement()
-        ..method = 'post'
-        ..action = 'https://script.google.com/macros/s/AKfycbwHrbADiyatjB2jTnpWnOZ0jm9ei5NZUgiXmoYgZp4KRc6D6NDNLPq9pdmt5TXOal5d-A/exec'
-        ..target = 'hidden_iframe';
-
-      final dataField = html.InputElement()
-        ..type = 'hidden'
-        ..name = 'data'
-        ..value = jsonEncode({
+      await http.post(
+        Uri.parse('http://localhost:3000/checkout'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
           'email': _resolvedEmail,
           'timestamp': DateTime.now().toIso8601String(),
           'image': _photoBase64 ?? '',
-        });
-
-      form.append(dataField);
-      html.document.body!.append(form);
-      form.submit();
-      form.remove();
+        }),
+      );
     } catch (_) {}
     if (mounted) {
       setState(() {
